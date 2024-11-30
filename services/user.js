@@ -1,6 +1,5 @@
 const bcrypt = require("bcryptjs");
 const mongooseUser = require("../models/user");
-const user = require("../models/user");
 
 async function createUser(userParams) {
   const { username, email, password } = userParams;

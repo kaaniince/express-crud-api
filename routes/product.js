@@ -1,16 +1,10 @@
 const express = require("express");
 const productController = require("../controllers/product");
 const authMiddleware = require("../middleware/auth");
-const cacheMiddleware = require("../middleware/cache");
 
 const router = express.Router();
 
-router.get(
-  "/",
-  authMiddleware,
-  cacheMiddleware("products"),
-  productController.getProducts
-);
+router.get("/", authMiddleware, productController.getProducts);
 
 // Diğer işlemler
 router.post("/", authMiddleware, productController.createProduct);
