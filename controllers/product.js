@@ -2,6 +2,22 @@ const productService = require("../services/product");
 
 const productController = {
   createProduct: async (req, res) => {
+    const { name, price, description, color, stock } = req.body;
+    if (!name) {
+      res.status(502).send({ error: "Product name is required" });
+    }
+    if (!price) {
+      res.status(502).send({ error: "Product price is required" });
+    }
+    if (!description) {
+      res.status(502).send({ error: "Product description is required" });
+    }
+    if (!color) {
+      res.status(502).send({ error: "Product color is required" });
+    }
+    if (!stock) {
+      res.status(502).send({ error: "Product stock is required" });
+    }
     try {
       const response = await productService.createProduct(req.body);
       if (response) {

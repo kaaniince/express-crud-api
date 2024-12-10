@@ -1,6 +1,7 @@
 //PRIVADE
 
 const userService = require("../services/user");
+const { kafka } = require("../utils/kafka");
 
 const userController = {
   updateUser: async (req, res) => {
@@ -37,6 +38,13 @@ const userController = {
       res.status(200).send({ response });
     } catch (error) {
       res.status(500).send({ error: "An error occurred during get users" });
+    }
+  },
+  createOrder: async (req, res) => {
+    try {
+      await kafka.sendMessage("order", "order created");
+    } catch (error) {
+      res.status(500).send({ error: "An error occurred during create order" });
     }
   },
 };

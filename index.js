@@ -1,6 +1,7 @@
 const express = require("express");
 const routes = require("./routes/index");
 const connectDB = require("./config/db");
+const { redisCon } = require("./utils/redis");
 
 const app = express();
 
@@ -12,6 +13,8 @@ app.use(express.urlencoded({ extended: true }));
 
 //connect to db
 connectDB();
+
+redisCon();
 
 app.get(
   "/test",
