@@ -9,5 +9,6 @@ router.get("/:userId", authMiddleware, basketController.viewCart);
 // Diğer işlemler
 router.post("/", authMiddleware, basketController.addToCart);
 router.delete("/", authMiddleware, basketController.removeFromCart);
+router.post("/clear", authMiddleware, basketController.clearCart);
 
 module.exports = router;

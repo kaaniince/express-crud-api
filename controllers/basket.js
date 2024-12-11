@@ -64,6 +64,22 @@ const basketController = {
       });
     }
   },
+  clearCart: async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).send({ error: "User ID is required" });
+    }
+    try {
+      const isSuccess = await basketService.clearCart(userId);
+      console.log("Service response:", isSuccess);
+      res.status(200).send({ message: isSuccess });
+    } catch (error) {
+      console.error("Error in clearCart:", error);
+      res.status(500).send({
+        error: "An error occurred while clearing the cart",
+      });
+    }
+  },
 };
 
 module.exports = basketController;

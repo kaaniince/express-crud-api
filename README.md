@@ -67,3 +67,7 @@ code .
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+docker run -d --name redis2 -p 127.0.0.1:6379:6379 redis
+docker start redis-final-project
+docker stop redis-final-project

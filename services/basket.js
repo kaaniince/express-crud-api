@@ -1,104 +1,104 @@
 const { redisCon } = require("../utils/redis");
 
-async function addToCart(params) {
-  try {
-    const { userId, productId, quantity = 1 } = params;
-
-    // Check for required parameters
-    if (!userId || !productId) {
-      console.error(
-        "Missing required parameters: userId and productId are required"
-      );
-      return false;
-    }
-
-    const client = await redisCon();
-    const cartKey = `cart:${userId}`;
-
-    // Check current quantity and convert to string
-    const currentQuantity =
-      (await client.hGet(cartKey, productId.toString())) || "0";
-    const newQuantity = (
-      parseInt(currentQuantity, 10) + parseInt(quantity, 10)
-    ).toString();
-
-    await client.hSet(cartKey, productId.toString(), newQuantity);
-    return true;
-  } catch (error) {
-    console.error("Error occurred while adding product to cart:", error);
+async function addToCart({ userId, productId, quantity = 1 }) {
+  if (
+    typeof userId !== "string" ||
+    userId.trim() === "" ||
+    typeof productId !== "string" ||
+    productId.trim() === ""
+  ) {
+    console.error("Invalid userId or productId");
     return false;
   }
-}
-async function removeFromCart(params) {
+
   try {
-    const { userId, productId } = params;
-
-    if (!userId || !productId) {
-      console.error(
-        "Missing required parameters: userId and productId are required"
-      );
-      return false;
-    }
-
     const client = await redisCon();
-    const cartKey = `cart:${userId}`;
-    await client.hDel(cartKey, productId.toString());
+    const cartKey = `cart:${userId.trim()}`;
+    const currentQuantity = parseInt(
+      (await client.hGet(cartKey, productId.trim())) || "0",
+      10
+    );
+    const newQuantity = currentQuantity + parseInt(quantity, 10);
 
+    await client.hSet(cartKey, productId.trim(), newQuantity.toString());
     return true;
   } catch (error) {
-    console.error("Error occurred while removing product from cart:", error);
+    console.error("Error in addToCart:", error);
     return false;
   }
 }
 
-// 1 ürün silindi
-// async function removeFromCart(params) {
-//     try {
-//       const { userId, productId } = params;
+async function removeFromCart({ userId, productId }) {
+  if (
+    typeof userId !== "string" ||
+    userId.trim() === "" ||
+    typeof productId !== "string" ||
+    productId.trim() === ""
+  ) {
+    console.error("Invalid userId or productId");
+    return false;
+  }
 
-//       if (!userId || !productId) {
-//         console.error(
-//           "Missing required parameters: userId and productId are required"
-//         );
-//         return false;
-//       }
+  try {
+    const client = await redisCon();
+    const cartKey = `cart:${userId.trim()}`;
+    const currentQuantity = parseInt(
+      (await client.hGet(cartKey, productId.trim())) || "0",
+      10
+    );
+    const newQuantity = Math.max(0, currentQuantity - 1);
 
-//       const client = await redisCon();
-//       const cartKey = `cart:${userId}`;
+    if (newQuantity === 0) {
+      await client.hDel(cartKey, productId.trim());
+    } else {
+      await client.hSet(cartKey, productId.trim(), newQuantity.toString());
+    }
 
-//       // Mevcut miktarı kontrol et
-//       const currentQuantity = await client.hGet(cartKey, productId.toString()) || "0";
-//       const newQuantity = Math.max(0, parseInt(currentQuantity, 10) - 1);
-
-//       if (newQuantity === 0) {
-//         // Miktar 0'a düştüyse ürünü tamamen sil
-//         await client.hDel(cartKey, productId.toString());
-//       } else {
-//         // Yeni miktarı güncelle
-//         await client.hSet(cartKey, productId.toString(), newQuantity.toString());
-//       }
-
-//       return true;
-//     } catch (error) {
-//       console.error("Error occurred while removing product from cart:", error);
-//       return false;
-//     }
-//   }
+    return true;
+  } catch (error) {
+    console.error("Error in removeFromCart:", error);
+    return false;
+  }
+}
 
 async function viewCart(userId) {
-  try {
-    if (!userId) {
-      console.error("Missing required parameter: userId is required");
-      return null;
-    }
-
-    const client = await redisCon();
-    const cartKey = `cart:${userId}`;
-    const cartItems = await client.hGetAll(cartKey);
-    return cartItems;
-  } catch (error) {
-    console.error("Error occurred while viewing the cart:", error);
+  if (typeof userId !== "string" || userId.trim() === "") {
+    console.error("Invalid userId");
     return null;
+  }
+
+  try {
+    const client = await redisCon();
+    const cartKey = `cart:${userId.trim()}`;
+    return await client.hGetAll(cartKey);
+  } catch (error) {
+    console.error("Error in viewCart:", error);
+    return null;
+  }
+}
+
+async function clearCart(userId) {
+  if (typeof userId !== "string" || userId.trim() === "") {
+    console.error("Invalid userId");
+    return false;
+  }
+
+  try {
+    const client = await redisCon();
+    const cartKey = `cart:${userId.trim()}`;
+    await client.del(cartKey);
+
+    const remainingContent = await client.hGetAll(cartKey);
+    if (Object.keys(remainingContent).length === 0) {
+      console.log(`Cart cleared successfully for user: ${userId}`);
+      return true;
+    } else {
+      console.error(`Failed to clear cart for user: ${userId}`);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error in clearCart:", error);
+    return false;
   }
 }
 
@@ -106,4 +106,5 @@ module.exports = {
   addToCart,
   removeFromCart,
   viewCart,
+  clearCart,
 };
