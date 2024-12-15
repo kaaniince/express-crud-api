@@ -14,13 +14,23 @@ async function addToCart({ userId, productId, quantity = 1 }) {
   try {
     const client = await redisCon();
     const cartKey = `cart:${userId.trim()}`;
-    const currentQuantity = parseInt(
-      (await client.hGet(cartKey, productId.trim())) || "0",
-      10
-    );
-    const newQuantity = currentQuantity + parseInt(quantity, 10);
+    const currentBasket = (await client.get(cartKey))
+      ? JSON.parse(await client.get(cartKey))
+      : [];
 
-    await client.hSet(cartKey, productId.trim(), newQuantity.toString());
+    const productIndex = currentBasket.findIndex(
+      (item) => item.productId === productId.trim()
+    );
+    if (productIndex !== -1) {
+      currentBasket[productIndex].quantity += parseInt(quantity, 10);
+    } else {
+      currentBasket.push({
+        productId: productId.trim(),
+        quantity: parseInt(quantity, 10),
+      });
+    }
+
+    await client.set(cartKey, JSON.stringify(currentBasket));
     return true;
   } catch (error) {
     console.error("Error in addToCart:", error);
@@ -28,7 +38,7 @@ async function addToCart({ userId, productId, quantity = 1 }) {
   }
 }
 
-async function removeFromCart({ userId, productId }) {
+async function removeFromCart({ userId, productId, quantity = 1 }) {
   if (
     typeof userId !== "string" ||
     userId.trim() === "" ||
@@ -42,19 +52,34 @@ async function removeFromCart({ userId, productId }) {
   try {
     const client = await redisCon();
     const cartKey = `cart:${userId.trim()}`;
-    const currentQuantity = parseInt(
-      (await client.hGet(cartKey, productId.trim())) || "0",
-      10
-    );
-    const newQuantity = Math.max(0, currentQuantity - 1);
+    const currentBasket = (await client.get(cartKey))
+      ? JSON.parse(await client.get(cartKey))
+      : [];
 
-    if (newQuantity === 0) {
-      await client.hDel(cartKey, productId.trim());
-    } else {
-      await client.hSet(cartKey, productId.trim(), newQuantity.toString());
+    const productIndex = currentBasket.findIndex(
+      (product) => product.productId === productId.trim()
+    );
+
+    if (productIndex !== -1) {
+      // Mevcut miktar
+      const currentQuantity = currentBasket[productIndex].quantity;
+
+      // Yeni miktar hesaplama
+      const newQuantity = currentQuantity - parseInt(quantity, 10);
+
+      if (newQuantity > 0) {
+        // Miktar 0'dan büyükse güncelle
+        currentBasket[productIndex].quantity = newQuantity;
+      } else {
+        // Miktar 0 veya daha azsa ürünü tamamen kaldır
+        currentBasket.splice(productIndex, 1);
+      }
+
+      await client.set(cartKey, JSON.stringify(currentBasket));
+      return true;
     }
 
-    return true;
+    return false; // Ürün bulunamadıysa false döndür
   } catch (error) {
     console.error("Error in removeFromCart:", error);
     return false;
@@ -70,7 +95,9 @@ async function viewCart(userId) {
   try {
     const client = await redisCon();
     const cartKey = `cart:${userId.trim()}`;
-    return await client.hGetAll(cartKey);
+    // hGetAll yerine get kullanıp JSON parse edelim
+    const cart = await client.get(cartKey);
+    return cart ? JSON.parse(cart) : [];
   } catch (error) {
     console.error("Error in viewCart:", error);
     return null;

@@ -28,3 +28,11 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"

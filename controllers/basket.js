@@ -2,22 +2,19 @@ const basketService = require("../services/basket");
 
 const basketController = {
   addToCart: async (req, res) => {
+    const { userId, product, quantity } = req.body;
+    if (!userId) {
+      return res.status(400).send({ message: "userId is required" });
+    }
+
+    if (!quantity) {
+      return res.status(400).send({ message: "quantity is required" });
+    }
     try {
-      console.log("Request body:", req.body);
-
-      const isSuccess = await basketService.addToCart(req.body);
-      console.log("Service response:", isSuccess);
-
-      if (isSuccess) {
-        res.status(201).send({ message: "Product added to cart successfully" });
-      } else {
-        res.status(500).send({
-          error: "Failed to add product to cart",
-        });
-      }
+      const response = await basketService.addToCart(req.body);
+      res.status(200).send({ response: response });
     } catch (error) {
       console.error("Error in addToCart:", error);
-
       res.status(500).send({
         error: "An error occurred while adding product to cart",
         details: error.message,
@@ -25,20 +22,33 @@ const basketController = {
     }
   },
   removeFromCart: async (req, res) => {
+    const { userId, productId, quantity } = req.body;
+
+    if (!userId) {
+      return res.status(400).send({ message: "userId is required" });
+    }
+    if (!productId) {
+      return res.status(400).send({ message: "productId is required" });
+    }
+
     try {
-      const isSuccess = await basketService.removeFromCart(req.body);
-      if (isSuccess) {
-        res
-          .status(200)
-          .send({ message: "Product removed from cart successfully" });
+      const response = await basketService.removeFromCart({
+        userId,
+        productId,
+        quantity,
+      });
+
+      if (response) {
+        res.status(200).send({ response: true });
       } else {
-        res.status(500).send({ error: "Failed to remove product from cart" });
+        res.status(404).send({ message: "Product not found in cart" });
       }
     } catch (error) {
       console.error("Error in removeFromCart:", error);
-      res
-        .status(500)
-        .send({ error: "An error occurred while removing product from cart" });
+      res.status(500).send({
+        error: "An error occurred while removing product from cart",
+        details: error.message,
+      });
     }
   },
   viewCart: async (req, res) => {
