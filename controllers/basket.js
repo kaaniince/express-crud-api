@@ -2,14 +2,11 @@ const basketService = require("../services/basket");
 
 const basketController = {
   addToCart: async (req, res) => {
-    const { userId, product, quantity } = req.body;
+    const { userId, product } = req.body;
     if (!userId) {
       return res.status(400).send({ message: "userId is required" });
     }
 
-    if (!quantity) {
-      return res.status(400).send({ message: "quantity is required" });
-    }
     try {
       const response = await basketService.addToCart(req.body);
       res.status(200).send({ response: response });
@@ -22,7 +19,7 @@ const basketController = {
     }
   },
   removeFromCart: async (req, res) => {
-    const { userId, productId, quantity } = req.body;
+    const { userId, productId } = req.body;
 
     if (!userId) {
       return res.status(400).send({ message: "userId is required" });
@@ -35,7 +32,6 @@ const basketController = {
       const response = await basketService.removeFromCart({
         userId,
         productId,
-        quantity,
       });
 
       if (response) {

@@ -1,11 +1,11 @@
 const { redisCon } = require("../utils/redis");
 
-async function addToCart({ userId, productId, quantity = 1 }) {
+async function addToCart(params) {
   if (
-    typeof userId !== "string" ||
-    userId.trim() === "" ||
-    typeof productId !== "string" ||
-    productId.trim() === ""
+    typeof params.userId !== "string" ||
+    params.userId.trim() === "" ||
+    typeof params.productId !== "string" ||
+    params.productId.trim() === ""
   ) {
     console.error("Invalid userId or productId");
     return false;
@@ -13,20 +13,21 @@ async function addToCart({ userId, productId, quantity = 1 }) {
 
   try {
     const client = await redisCon();
-    const cartKey = `cart:${userId.trim()}`;
+    const cartKey = `cart:${params.userId.trim()}`;
     const currentBasket = (await client.get(cartKey))
       ? JSON.parse(await client.get(cartKey))
       : [];
 
     const productIndex = currentBasket.findIndex(
-      (item) => item.productId === productId.trim()
+      (item) => item.productId === params.productId.trim()
     );
     if (productIndex !== -1) {
-      currentBasket[productIndex].quantity += parseInt(quantity, 10);
+      currentBasket[productIndex].quantity += parseInt(params.quantity, 10);
     } else {
       currentBasket.push({
-        productId: productId.trim(),
-        quantity: parseInt(quantity, 10),
+        productId: params.productId.trim(),
+        productName: params.productName.trim(),
+        quantity: parseInt(params.quantity, 10),
       });
     }
 
